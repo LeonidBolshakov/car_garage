@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
         self,
         row: int,
         column: int,
-        color: str = None,
+        color: str | None = None,
     ) -> None:
         if color is None:
             color = "transparent"
@@ -167,7 +167,7 @@ class MainWindow(QMainWindow):
         self,
         row: int,
         column: int,
-        color: str = None,
+        color: str | None = None,
     ) -> None:
         if color is None:
             color = "yellow"
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
             lambda: self.set_indicator_color(row, column),
         )
 
-    def _indicator_style_sheet(self, color: str = None) -> str:
+    def _indicator_style_sheet(self, color: str | None = None) -> str:
         return f"""
             background-color: {color};
             border-radius: 12px;
