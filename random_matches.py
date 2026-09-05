@@ -17,13 +17,13 @@ class Id:
 
 @dataclass
 class CarOrGarage:
-    correspondence: Id | None = None
+    busy: bool = False
 
 
 type SequenceCarOrGarage = Sequence[CarOrGarage]
 
 
-class RandomMatches:
+class RandomConformity:
     def __init__(self) -> None:
         self.objects: dict[Id, CarOrGarage] = {}
         self.is_init_cars_done: bool = False
@@ -38,7 +38,7 @@ class RandomMatches:
                     object_type,
                     object_num,
                 )
-            ] = CarOrGarage(correspondence=None)
+            ] = CarOrGarage(busy=False)
 
         if object_type == Type.CAR:
             self.is_init_cars_done = True
@@ -49,63 +49,23 @@ class RandomMatches:
     def _check_param_init_objects(
         self, objects_seguency: Sequence[int], object_type: Type
     ) -> None:
-        if not isinstance(objects_seguency, Sequence):
-            raise TypeError(
-                "Класс RandomMatches. Метод init_cars\n"
-                "Первый параметр должен иметь тип Sequence"
-            )
-
-        if not isinstance(object_type, Type):
-            raise TypeError(
-                "Класс RandomMatches. Метод init_cars\n"
-                "Второй параметр должен иметь тип Type"
-            )
-
-        if self.is_init_cars_done:
+        if object_type == Type.CAR and self.is_init_cars_done:
             raise RuntimeError(
-                "Класс RandomMatches. Метод init_cars\n"
+                "Класс RandomConformity. Метод init_cars\n"
                 "Объеты типа Type.CAR уже инициализированы"
             )
-        if self.is_init_garage_done:
+
+        if object_type == Type.GARAGE and self.is_init_garage_done:
             raise RuntimeError(
-                "Класс RandomMatches. Метод init_cars\n"
+                "Класс RandomConformity. Метод init_cars\n"
                 "Объеты типа Type.GARAGE уже инициализированы"
             )
 
-    def set_correspondences(self, object_a_id: Id, object_b_id: Id) -> None:
-        self._check_param_set_correspondences(object_a_id, object_b_id)
-
-        self.objects[object_a_id].correspondence = object_b_id
-        self.objects[object_b_id].correspondence = object_a_id
-
-    def _check_param_set_correspondences(
-        self, object_a_id: Id, object_b_id: Id
-    ) -> None:
-        if not (isinstance(object_a_id, Id) and isinstance(object_b_id, Id)):
-            raise TypeError(
-                "Класс RandomMatches. Метод set_correspondences\n"
-                "Параметры должны иметь тип Id"
-            )
-
-        if object_a_id.object_type == object_b_id.object_type:
-            raise ValueError(
-                "Класс RandomMatches. Метод set_correspondences\n"
-                "Объекты параметоров должны иметь разные типы ('Авто' и 'Гараж')"
-            )
-
     def _is_free_object(self, obect_id: Id) -> bool:
-        self._check_param_is_busy(obect_id)
 
-        return self.objects[obect_id].correspondence is None
+        return not self.objects[obect_id].busy
 
-    def _check_param_is_busy(self, obect_id: Id) -> None:
-        if not isinstance(obect_id, Id):
-            raise TypeError(
-                "Класс RandomMatches. Метод is_busy_object\n"
-                "Параметр должен иметь тип Id"
-            )
-
-    def selecting_random_free_object(self, filtr: Type | None) -> Id | None:
+    def selecting_random_free_object(self, filtr: Type | None = None) -> Id | None:
         self._check_param_selecting_random_free_object(filtr)
 
         free_objects: list = []
@@ -118,12 +78,23 @@ class RandomMatches:
 
         if not free_objects:
             return None
+        t = random.choice(free_objects)
 
-        return random.choice(free_objects).id
+        return random.choice(free_objects)
 
     def _check_param_selecting_random_free_object(self, filtr: Type | None) -> None:
         if filtr is not None and not isinstance(filtr, Type):
             raise TypeError(
-                "Класс RandomMatches. Метод selecting_random_free_object\n"
+                "Класс RandomConformity. Метод selecting_random_free_object\n"
                 "Параметр должен иметь тип Type или быть None"
             )
+
+    def random_color(self) -> str:
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+
+        return f"rgb({r}, {g}, {b})"
+
+    def set_object_is_occuped(self, object_id: Id) -> None:
+        self.objects[object_id].busy = True
