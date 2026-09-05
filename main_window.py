@@ -226,7 +226,6 @@ class MainWindow(QMainWindow):
             row=id_color.Id.object_id,
             column=self.get_indicator_column(id_color.Id.object_type),
             object_id=id_color.Id,
-            color=id_color.color,
         )
         self.wait_ms(MS_DISPLAY_DELAY)
 
@@ -239,7 +238,6 @@ class MainWindow(QMainWindow):
             row=opposite_id_color.Id.object_id,
             column=self.get_indicator_column(opposite_id_color.Id.object_type),
             object_id=opposite_id_color.Id,
-            color=id_color.color,
         )
 
         QApplication.beep()
@@ -250,11 +248,9 @@ class MainWindow(QMainWindow):
         row: int,
         column: int,
         object_id: Id,
-        color: str,
     ) -> None:
 
         self.random_conformity.set_object_is_occuped(object_id)
-        self.set_indicator_color(row=row, column=column, color=color)
         self.set_appearance_of_busy_indicator(row=row, column=column)
         self.view_pair_number(row, column)
 
