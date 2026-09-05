@@ -38,7 +38,7 @@ class RandomConformity:
                     object_type,
                     object_num,
                 )
-            ] = CarOrGarage(busy=False)
+            ] = CarOrGarage()
 
         if object_type == Type.CAR:
             self.is_init_cars_done = True
@@ -66,7 +66,6 @@ class RandomConformity:
         return not self.objects[obect_id].busy
 
     def selecting_random_free_object(self, filtr: Type | None = None) -> Id | None:
-        self._check_param_selecting_random_free_object(filtr)
 
         free_objects: list = []
         for currrent_object_id in self.objects:
@@ -78,16 +77,8 @@ class RandomConformity:
 
         if not free_objects:
             return None
-        t = random.choice(free_objects)
 
         return random.choice(free_objects)
-
-    def _check_param_selecting_random_free_object(self, filtr: Type | None) -> None:
-        if filtr is not None and not isinstance(filtr, Type):
-            raise TypeError(
-                "Класс RandomConformity. Метод selecting_random_free_object\n"
-                "Параметр должен иметь тип Type или быть None"
-            )
 
     def random_color(self) -> str:
         r = random.randint(0, 255)

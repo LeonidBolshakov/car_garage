@@ -18,14 +18,14 @@ from PyQt6.QtCore import Qt, QTimer, QEventLoop
 from random_matches import RandomConformity, Type, Id
 from photolabel import PhotoLabel
 
-MS_FLICKER_DELAY = 1500
-SEC_START_RANDOM_TIME_INTERVAL = 5
-SEC_STOP_RANDOM_TIME_INTERVAL = 10
+MS_DISPLAY_DELAY = 1500
+SEC_START_RANDOM_TIME_INTERVAL = 7
+SEC_STOP_RANDOM_TIME_INTERVAL = 15
 
 INDICATOR_COLORS = (
     ("#4F6BED", "#3548A8"),
-    ("#8E5BD9", "#613D99"),
     ("#2F9E9A", "#1F6F6C"),
+    ("#8E5BD9", "#613D99"),
 )
 
 INDICATOR_TEXT_COLOR = "white"
@@ -40,8 +40,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
-        self._pair_number = 1
-        self._indicators: dict[tuple[int, int], QLabel] = {}
+        self._pair_number = 0  # Номер пары
+        self._indicators: dict[tuple[int, int], QLabel] = {}  # тИндикаторы фотографий
         self.cars: list[int] = []
         self.garages: list[int] = []
 
@@ -67,10 +67,10 @@ class MainWindow(QMainWindow):
         self.button_start = QPushButton("Поехали!")
 
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(20)
         font.setBold(True)
-        self.button_start.setFont(font)
 
+        self.button_start.setFont(font)
         self.button_start.setStyleSheet("color: red")
         self.button_start.setSizePolicy(
             QSizePolicy.Policy.Fixed,
@@ -85,7 +85,6 @@ class MainWindow(QMainWindow):
     def _create_grid_for_photos_and_indicators(self):
         self._grid = QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
-        self._grid.setHorizontalSpacing(5)
         self._grid.setVerticalSpacing(4)
 
         self._grid.setColumnStretch(0, 1)  # левые фотографии
@@ -119,19 +118,15 @@ class MainWindow(QMainWindow):
                 self.garages.append(r_row)
                 r_row += 1
 
+        max_row = max(l_row, r_row)
+        for row in range(max_row):
+            self._grid.setRowStretch(row, 1)
+
     def _is_photo_file(self, file: Path) -> bool:
         if not file.is_file():
             return False
 
-        if not file.suffix.lower() in {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp",
-        }:
-            return False
-
-        return True
+        return file.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
 
     def _create_indicator(self, color: str | None = None) -> QLabel:
         if color is None:
@@ -199,6 +194,9 @@ class MainWindow(QMainWindow):
             font-weight: bold;
         """
 
+    def _photo_widwet_style_sheet(self):
+        return "border: 1px solid lightgray;"
+
     def _connects(self):
         self.button_start.clicked.connect(self.preparing_button_start)
 
@@ -215,21 +213,22 @@ class MainWindow(QMainWindow):
     def preparing_button_start(self):
         self.button_start.setEnabled(False)
 
-        if self._find_cars_and_garages():
+        if self._create_random_car_garage_pair():
             self.button_start.setEnabled(True)
 
-    def _find_cars_and_garages(self) -> bool:
+    def _create_random_car_garage_pair(self) -> bool:
         id_color = self.random_selection_with_animation()
         if id_color is None:
             return False
 
+        self._pair_number += 1
         self.set_and_show_object_is_occuped(
             row=id_color.Id.object_id,
             column=self.get_indicator_column(id_color.Id.object_type),
             object_id=id_color.Id,
             color=id_color.color,
         )
-        self.wait_ms(MS_FLICKER_DELAY)
+        self.wait_ms(MS_DISPLAY_DELAY)
 
         opposite_type = Type.GARAGE if id_color.Id.object_type == Type.CAR else Type.CAR
         opposite_id_color = self.random_selection_with_animation(filtr=opposite_type)
@@ -243,7 +242,6 @@ class MainWindow(QMainWindow):
             color=id_color.color,
         )
 
-        self._pair_number += 1
         QApplication.beep()
         return True
 
@@ -254,12 +252,13 @@ class MainWindow(QMainWindow):
         object_id: Id,
         color: str,
     ) -> None:
+
         self.random_conformity.set_object_is_occuped(object_id)
         self.set_indicator_color(row=row, column=column, color=color)
-        self.set_apperriance_of_busy_ndicator(row=row, column=column)
+        self.set_appearance_of_busy_indicator(row=row, column=column)
         self.view_pair_number(row, column)
 
-    def set_apperriance_of_busy_ndicator(self, row: int, column: int) -> None:
+    def set_appearance_of_busy_indicator(self, row: int, column: int) -> None:
         indicator = self._indicators[row, column]
         indicator.setFixedSize(48, 48)
         indicator.setStyleSheet(self._busy_indicator_style_sheet())
@@ -284,18 +283,18 @@ class MainWindow(QMainWindow):
             SEC_STOP_RANDOM_TIME_INTERVAL,
         )  # случайное время в заданном интервале секунд
         number_random_iterations = int(
-            random_time_sec * 1000 / MS_FLICKER_DELAY
+            random_time_sec * 1000 / MS_DISPLAY_DELAY
         )  # Количество итераций для реализации случайного времени
 
         result: IdColor | None = None
         for _ in range(number_random_iterations):
-            result = self._flash_single_random_object(filtr)
+            result = self._find_and_show_single_random_object(filtr)
             if result is None:
                 return None
 
         return result
 
-    def _flash_single_random_object(self, filtr: Type | None) -> IdColor | None:
+    def _find_and_show_single_random_object(self, filtr: Type | None) -> IdColor | None:
 
         selected_id = self.random_conformity.selecting_random_free_object(filtr=filtr)
         if selected_id is None:
@@ -309,20 +308,17 @@ class MainWindow(QMainWindow):
             column=column,
         )
 
-        self.wait_ms(MS_FLICKER_DELAY)
+        self.wait_ms(MS_DISPLAY_DELAY)
 
         self.set_indicator_color(
             row=row,
             column=column,
-        )
+        )  # возвращаем цвет по умолчанию
 
         return IdColor(selected_id, color)
-
-    def _widget_style_sheet(self):
-        return "border: 1px solid lightgray;"
 
     def _add_and_style_widget_in_layuot(
         self, row: int, column: int, widget: QWidget
     ) -> None:
-        widget.setStyleSheet(self._widget_style_sheet())
+        widget.setStyleSheet(self._photo_widwet_style_sheet())
         self._grid.addWidget(widget, row, column)
