@@ -22,6 +22,14 @@ MS_FLICKER_DELAY = 1500
 SEC_START_RANDOM_TIME_INTERVAL = 5
 SEC_STOP_RANDOM_TIME_INTERVAL = 10
 
+INDICATOR_COLORS = (
+    ("#4F6BED", "#3548A8"),
+    ("#8E5BD9", "#613D99"),
+    ("#2F9E9A", "#1F6F6C"),
+)
+
+INDICATOR_TEXT_COLOR = "white"
+
 
 class IdColor(NamedTuple):
     Id: Id
@@ -32,18 +40,19 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        self._pair_number = 1
         self._indicators: dict[tuple[int, int], QLabel] = {}
         self.cars: list[int] = []
         self.garages: list[int] = []
 
-        self._setting_window_view()
+        self._setting_main_window_view()
         self._setting_button_start()
         self._create_grid_for_photos_and_indicators()
         self._posting_photos_and_indicators()
         self._init_random_conformity()
         self._connects()
 
-    def _setting_window_view(self):
+    def _setting_main_window_view(self):
         self.setWindowTitle("Автомобиль <-> Гараж")
         self.resize(1200, 1200)
 
@@ -100,19 +109,15 @@ class MainWindow(QMainWindow):
             photo = PhotoLabel(file)
 
             if file.name.startswith("L_"):
-                self._grid.addWidget(photo, l_row, 0)
+                self._add_and_style_widget_in_layuot(row=l_row, column=0, widget=photo)
                 self._add_indicator(l_row, 1)
                 self.cars.append(l_row)
                 l_row += 1
             if file.name.startswith("R_"):
                 self._add_indicator(r_row, 3)
-                self._grid.addWidget(photo, r_row, 4)
+                self._add_and_style_widget_in_layuot(row=r_row, column=4, widget=photo)
                 self.garages.append(r_row)
                 r_row += 1
-
-        row_count = max(l_row, r_row)
-        for row in range(row_count):
-            self._grid.setRowStretch(row, 1)
 
     def _is_photo_file(self, file: Path) -> bool:
         if not file.is_file():
@@ -177,6 +182,23 @@ class MainWindow(QMainWindow):
             border-radius: 12px;
         """
 
+    def _busy_indicator_style_sheet(self):
+        # нумерация пар начинается с 1
+        background, border = INDICATOR_COLORS[
+            (self._pair_number - 1) % len(INDICATOR_COLORS)
+        ]
+
+        return f"""
+            background-color: {background};
+            color: {INDICATOR_TEXT_COLOR};
+    
+            border: {border};
+            border-radius: 24px;
+    
+            font-size: 18px;
+            font-weight: bold;
+        """
+
     def _connects(self):
         self.button_start.clicked.connect(self.preparing_button_start)
 
@@ -197,40 +219,31 @@ class MainWindow(QMainWindow):
             self.button_start.setEnabled(True)
 
     def _find_cars_and_garages(self) -> bool:
-
         id_color = self.random_selection_with_animation()
         if id_color is None:
             return False
-        self.set_shape_of_indicator(
-            row=id_color.Id.object_id,
-            column=self.get_indicator_column(id_color.Id.object_type),
-        )
 
-        self.random_conformity.set_object_is_occuped(id_color.Id)
-        self.set_indicator_color(
+        self.set_and_show_object_is_occuped(
             row=id_color.Id.object_id,
             column=self.get_indicator_column(id_color.Id.object_type),
+            object_id=id_color.Id,
             color=id_color.color,
         )
+        self.wait_ms(MS_FLICKER_DELAY)
 
         opposite_type = Type.GARAGE if id_color.Id.object_type == Type.CAR else Type.CAR
         opposite_id_color = self.random_selection_with_animation(filtr=opposite_type)
         if opposite_id_color is None:
             return False
 
-        # self.set_and_show_object_is_occuped(r)
-
-        self.random_conformity.set_object_is_occuped(opposite_id_color.Id)
-        self.set_indicator_color(
+        self.set_and_show_object_is_occuped(
             row=opposite_id_color.Id.object_id,
             column=self.get_indicator_column(opposite_id_color.Id.object_type),
+            object_id=opposite_id_color.Id,
             color=id_color.color,
         )
 
-        self.set_shape_of_indicator(
-            row=opposite_id_color.Id.object_id,
-            column=self.get_indicator_column(opposite_id_color.Id.object_type),
-        )
+        self._pair_number += 1
         QApplication.beep()
         return True
 
@@ -238,15 +251,26 @@ class MainWindow(QMainWindow):
         self,
         row: int,
         column: int,
-        id_color: IdColor,
+        object_id: Id,
+        color: str,
     ) -> None:
-        self.random_conformity.set_object_is_occuped(id_color.Id)
-        self.set_indicator_color(row=row, column=column, color=id_color.color)
-        self.set_shape_of_indicator(row=row, column=column)
+        self.random_conformity.set_object_is_occuped(object_id)
+        self.set_indicator_color(row=row, column=column, color=color)
+        self.set_apperriance_of_busy_ndicator(row=row, column=column)
+        self.view_pair_number(row, column)
 
-    def set_shape_of_indicator(self, row: int, column: int) -> None:
+    def set_apperriance_of_busy_ndicator(self, row: int, column: int) -> None:
         indicator = self._indicators[row, column]
         indicator.setFixedSize(48, 48)
+        indicator.setStyleSheet(self._busy_indicator_style_sheet())
+        indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    def view_pair_number(self, row: int, column: int) -> None:
+        item = self._grid.itemAtPosition(row, column)
+        if item is None:
+            return
+
+        item.widget().setText(f"{self._pair_number}")
 
     def get_indicator_column(self, id_type: Type) -> int:
         return 1 if id_type == Type.CAR else 3
@@ -293,3 +317,12 @@ class MainWindow(QMainWindow):
         )
 
         return IdColor(selected_id, color)
+
+    def _widget_style_sheet(self):
+        return "border: 1px solid lightgray;"
+
+    def _add_and_style_widget_in_layuot(
+        self, row: int, column: int, widget: QWidget
+    ) -> None:
+        widget.setStyleSheet(self._widget_style_sheet())
+        self._grid.addWidget(widget, row, column)
