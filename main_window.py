@@ -1,6 +1,5 @@
 from pathlib import Path
 import random
-from typing import NamedTuple
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -29,11 +28,6 @@ INDICATOR_COLORS = (
 )
 
 INDICATOR_TEXT_COLOR = "white"
-
-
-class IdColor(NamedTuple):
-    Id: Id
-    color: str
 
 
 class MainWindow(QMainWindow):
@@ -217,27 +211,27 @@ class MainWindow(QMainWindow):
             self.button_start.setEnabled(True)
 
     def _create_random_car_garage_pair(self) -> bool:
-        id_color = self.random_selection_with_animation()
-        if id_color is None:
+        base_id = self.random_selection_with_animation()
+        if base_id is None:
             return False
 
         self._pair_number += 1
         self.set_and_show_object_is_occuped(
-            row=id_color.Id.object_id,
-            column=self.get_indicator_column(id_color.Id.object_type),
-            object_id=id_color.Id,
+            row=base_id.object_id,
+            column=self.get_indicator_column(base_id.object_type),
+            object_id=base_id,
         )
         self.wait_ms(MS_DISPLAY_DELAY)
 
-        opposite_type = Type.GARAGE if id_color.Id.object_type == Type.CAR else Type.CAR
-        opposite_id_color = self.random_selection_with_animation(filtr=opposite_type)
-        if opposite_id_color is None:
+        opposite_type = Type.GARAGE if base_id.object_type == Type.CAR else Type.CAR
+        opposite_id = self.random_selection_with_animation(filtr=opposite_type)
+        if opposite_id is None:
             return False
 
         self.set_and_show_object_is_occuped(
-            row=opposite_id_color.Id.object_id,
-            column=self.get_indicator_column(opposite_id_color.Id.object_type),
-            object_id=opposite_id_color.Id,
+            row=opposite_id.object_id,
+            column=self.get_indicator_column(opposite_id.object_type),
+            object_id=opposite_id,
         )
 
         QApplication.beep()
@@ -270,9 +264,7 @@ class MainWindow(QMainWindow):
     def get_indicator_column(self, id_type: Type) -> int:
         return 1 if id_type == Type.CAR else 3
 
-    def random_selection_with_animation(
-        self, filtr: Type | None = None
-    ) -> IdColor | None:
+    def random_selection_with_animation(self, filtr: Type | None = None) -> Id | None:
 
         random_time_sec = random.randint(
             SEC_START_RANDOM_TIME_INTERVAL,
@@ -282,7 +274,7 @@ class MainWindow(QMainWindow):
             random_time_sec * 1000 / MS_DISPLAY_DELAY
         )  # Количество итераций для реализации случайного времени
 
-        result: IdColor | None = None
+        result: Id | None = None
         for _ in range(number_random_iterations):
             result = self._find_and_show_single_random_object(filtr)
             if result is None:
@@ -290,7 +282,7 @@ class MainWindow(QMainWindow):
 
         return result
 
-    def _find_and_show_single_random_object(self, filtr: Type | None) -> IdColor | None:
+    def _find_and_show_single_random_object(self, filtr: Type | None) -> Id | None:
 
         selected_id = self.random_conformity.selecting_random_free_object(filtr=filtr)
         if selected_id is None:
@@ -311,7 +303,7 @@ class MainWindow(QMainWindow):
             column=column,
         )  # возвращаем цвет по умолчанию
 
-        return IdColor(selected_id, color)
+        return selected_id
 
     def _add_and_style_widget_in_layuot(
         self, row: int, column: int, widget: QWidget
