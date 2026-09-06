@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         self._posting_photos_and_indicators()
         self._init_random_conformity()
         self._connects()
+        self.leftover_pairs = min(len(self.cars), len(self.garages))
 
     def _setting_main_window_view(self):
         self.setWindowTitle("Автомобиль <-> Гараж")
@@ -157,13 +158,11 @@ class MainWindow(QMainWindow):
         self,
         row: int,
         column: int,
-    ) -> str:
+    ) -> None:
         color = self.random_conformity.random_color()
 
         indicator = self._indicators[row, column]
         indicator.setStyleSheet(self._indicator_style_sheet(color))
-
-        return color
 
     def _indicator_style_sheet(self, color: str) -> str:
         return f"""
@@ -207,15 +206,16 @@ class MainWindow(QMainWindow):
     def preparing_button_start(self):
         self.button_start.setEnabled(False)
 
-        if self._create_random_car_garage_pair():
+        if self._create_random_car_garage_pair() and self.leftover_pairs > 0:
             self.button_start.setEnabled(True)
 
     def _create_random_car_garage_pair(self) -> bool:
-        base_id = self.random_selection_with_animation()
+        self._pair_number += 1
+
+        base_id = self.random_single_selection_with_animation()
         if base_id is None:
             return False
 
-        self._pair_number += 1
         self.set_and_show_object_is_occuped(
             row=base_id.object_id,
             column=self.get_indicator_column(base_id.object_type),
@@ -224,7 +224,7 @@ class MainWindow(QMainWindow):
         self.wait_ms(MS_DISPLAY_DELAY)
 
         opposite_type = Type.GARAGE if base_id.object_type == Type.CAR else Type.CAR
-        opposite_id = self.random_selection_with_animation(filtr=opposite_type)
+        opposite_id = self.random_single_selection_with_animation(filtr=opposite_type)
         if opposite_id is None:
             return False
 
@@ -234,6 +234,7 @@ class MainWindow(QMainWindow):
             object_id=opposite_id,
         )
 
+        self.leftover_pairs -= 1
         QApplication.beep()
         return True
 
@@ -264,8 +265,9 @@ class MainWindow(QMainWindow):
     def get_indicator_column(self, id_type: Type) -> int:
         return 1 if id_type == Type.CAR else 3
 
-    def random_selection_with_animation(self, filtr: Type | None = None) -> Id | None:
-
+    def random_single_selection_with_animation(
+        self, filtr: Type | None = None
+    ) -> Id | None:
         random_time_sec = random.randint(
             SEC_START_RANDOM_TIME_INTERVAL,
             SEC_STOP_RANDOM_TIME_INTERVAL,
@@ -291,7 +293,7 @@ class MainWindow(QMainWindow):
         row = selected_id.object_id
         column = self.get_indicator_column(selected_id.object_type)
 
-        color = self.set_random_indicator_color(
+        self.set_random_indicator_color(
             row=row,
             column=column,
         )
