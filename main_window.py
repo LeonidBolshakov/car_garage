@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         row: int,
         column: int,
     ) -> None:
-        color = self.random_conformity.random_color()
+        color = self.random_color()
 
         indicator = self._indicators[row, column]
         indicator.setStyleSheet(self._indicator_style_sheet(color))
@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
 
     def _find_and_show_single_random_object(self, filtr: Type | None) -> Id | None:
 
-        selected_id = self.random_conformity.selecting_random_free_object(filtr=filtr)
+        selected_id = self.random_conformity.select_random_free_object(filtr=filtr)
         if selected_id is None:
             return None
 
@@ -312,3 +312,10 @@ class MainWindow(QMainWindow):
     ) -> None:
         widget.setStyleSheet(self._photo_widwet_style_sheet())
         self._grid.addWidget(widget, row, column)
+
+    def random_color(self) -> str:
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+
+        return f"rgb({r}, {g}, {b})"
