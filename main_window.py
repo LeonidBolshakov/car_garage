@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         self.garages: list[int] = []
 
         self._setting_main_window_view()
-        self._setting_button_start()
+        self._setup_start_button()
         self._create_grid_for_photos_and_indicators()
         self._posting_photos_and_indicators()
         self._init_random_conformity()
@@ -61,10 +61,10 @@ class MainWindow(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        # Основной вертикальный layuot
+        # Основной вертикальный layout
         self.main_layout = QVBoxLayout(central_widget)
 
-    def _setting_button_start(self):
+    def _setup_start_button(self):
         """Создаёт и размещает кнопку запуска случайного выбора пары."""
         self.button_start = QPushButton("Поехали!")
 
@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         )
 
     def _create_grid_for_photos_and_indicators(self):
-        """Создаёт сетку для фотографий автомобилей, гаражей и индикаторов."""
+        """Создаёт сетку для фотографий автомобилей и гаражей и для индикаторов."""
         self._grid = QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setVerticalSpacing(4)
@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         return indicator
 
     def _add_indicator(self, row: int, column: int) -> None:
-        """Добавляет индикатор в указанную позицию сетки."""
+        """Добавляет индикатор в указанную позицию сетки и словарь индикаторов."""
         indicator = self._create_indicator()
         self._grid.addWidget(
             indicator,
@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
         )
         self._indicators[(row, column)] = indicator
 
-    def set_indicator_color(
+    def _set_indicator_color(
         self,
         row: int,
         column: int,
@@ -184,16 +184,6 @@ class MainWindow(QMainWindow):
         """
         if color is None:
             color = "transparent"
-        indicator = self._indicators[row, column]
-        indicator.setStyleSheet(self._indicator_style_sheet(color))
-
-    def set_random_indicator_color(
-        self,
-        row: int,
-        column: int,
-    ) -> None:
-        """Устанавливает индикатору случайный цвет."""
-        color = self.random_color()
 
         indicator = self._indicators[row, column]
         indicator.setStyleSheet(self._indicator_style_sheet(color))
@@ -207,6 +197,7 @@ class MainWindow(QMainWindow):
 
     def _busy_indicator_style_sheet(self):
         """Возвращает stylesheet индикатора объекта, включённого в пару."""
+
         # нумерация пар начинается с 1
         background, border = INDICATOR_COLORS[
             (self._pair_number - 1) % len(INDICATOR_COLORS)
@@ -224,12 +215,12 @@ class MainWindow(QMainWindow):
         """
 
     def _photo_widwet_style_sheet(self):
-        """Возвращает stylesheet для рамки фотографии."""
+        """Возвращает stylesheet для рамки виджета фотографии."""
         return "border: 1px solid lightgray;"
 
     def _connects(self):
         """Подключает сигналы элементов интерфейса к обработчикам."""
-        self.button_start.clicked.connect(self.preparing_button_start)
+        self.button_start.clicked.connect(self._preparing_button_start)
 
     def _init_random_conformity(self):
         """Инициализирует модель случайного выбора автомобилей и гаражей."""
@@ -237,7 +228,8 @@ class MainWindow(QMainWindow):
         self.random_conformity.init_objects(self.cars, Type.CAR)
         self.random_conformity.init_objects(self.garages, Type.GARAGE)
 
-    def wait_ms(self, ms: int) -> None:
+    @staticmethod
+    def wait_ms(ms: int) -> None:
         """Выполняет задержку, сохраняя обработку событий Qt.
 
         Args:
@@ -247,7 +239,7 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(ms, loop.quit)
         loop.exec()
 
-    def preparing_button_start(self):
+    def _preparing_button_start(self):
         """Обрабатывает нажатие кнопки запуска и управляет её доступностью."""
         self.button_start.setEnabled(False)
 
@@ -255,7 +247,7 @@ class MainWindow(QMainWindow):
             self.button_start.setEnabled(True)
 
     def _create_random_car_garage_pair(self) -> bool:
-        """Создаёт и отображает случайную пару «автомобиль — гараж».
+        """Создаёт и отображает случайную пару «автомобиль <—> гараж».
 
         Returns:
             True, если пара успешно создана, иначе False.
@@ -271,6 +263,7 @@ class MainWindow(QMainWindow):
             column=self.get_indicator_column(base_id.object_type),
             object_id=base_id,
         )
+
         self.wait_ms(MS_DISPLAY_DELAY)
 
         opposite_type = Type.GARAGE if base_id.object_type == Type.CAR else Type.CAR
@@ -307,7 +300,7 @@ class MainWindow(QMainWindow):
         self.view_pair_number(row, column)
 
     def set_appearance_of_busy_indicator(self, row: int, column: int) -> None:
-        """Оформляет индикатор как занятый объект найденной пары."""
+        """Оформляет индикатор как объект пары."""
         indicator = self._indicators[row, column]
         indicator.setFixedSize(48, 48)
         indicator.setStyleSheet(self._busy_indicator_style_sheet())
@@ -334,8 +327,8 @@ class MainWindow(QMainWindow):
             filtr: Тип выбираемого объекта. Если None, выбирается объект любого типа.
 
         Returns:
-            Идентификатор последнего выбранного свободного объекта или None,
-            если подходящих свободных объектов нет.
+            Идентификатор последнего выбранного свободного объекта или
+            None, если подходящих свободных объектов нет.
         """
         random_time_sec = random.randint(
             SEC_START_RANDOM_TIME_INTERVAL,
@@ -370,14 +363,15 @@ class MainWindow(QMainWindow):
         row = selected_id.object_id
         column = self.get_indicator_column(selected_id.object_type)
 
-        self.set_random_indicator_color(
+        self._set_indicator_color(
             row=row,
             column=column,
+            color=self.random_color(),
         )
 
         self.wait_ms(MS_DISPLAY_DELAY)
 
-        self.set_indicator_color(
+        self._set_indicator_color(
             row=row,
             column=column,
         )  # возвращаем цвет по умолчанию
@@ -391,7 +385,8 @@ class MainWindow(QMainWindow):
         widget.setStyleSheet(self._photo_widwet_style_sheet())
         self._grid.addWidget(widget, row, column)
 
-    def random_color(self) -> str:
+    @staticmethod
+    def random_color() -> str:
         """Возвращает случайный цвет в формате RGB для Qt stylesheet."""
         r = random.randint(0, 255)
         g = random.randint(0, 255)
