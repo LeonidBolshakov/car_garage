@@ -244,7 +244,7 @@ class MainWindow(QMainWindow):
         """Обрабатывает нажатие кнопки запуска и управляет её доступностью."""
         self.button_start.setEnabled(False)
 
-        if self._create_random_car_garage_pair() and self.leftover_pairs > 0:
+        if self.leftover_pairs > 0 and self._create_random_car_garage_pair():
             self.button_start.setEnabled(True)
 
     def _create_random_car_garage_pair(self) -> bool:
