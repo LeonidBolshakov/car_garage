@@ -1,3 +1,5 @@
+"""Главное окно приложения для случайного сопоставления автомобилей и гаражей."""
+
 from pathlib import Path
 import random
 
@@ -31,7 +33,10 @@ INDICATOR_TEXT_COLOR = "white"
 
 
 class MainWindow(QMainWindow):
+    """Управляет интерфейсом и созданием случайных пар «автомобиль — гараж»."""
+
     def __init__(self) -> None:
+        """Инициализирует главное окно, объекты и обработчики сигналов."""
         super().__init__()
 
         self._pair_number = 0  # Номер пары
@@ -48,6 +53,7 @@ class MainWindow(QMainWindow):
         self.leftover_pairs = min(len(self.cars), len(self.garages))
 
     def _setting_main_window_view(self):
+        """Настраивает основные параметры главного окна и его layout."""
         self.setWindowTitle("Автомобиль <-> Гараж")
         self.resize(1200, 1200)
 
@@ -59,6 +65,7 @@ class MainWindow(QMainWindow):
         self.main_layout = QVBoxLayout(central_widget)
 
     def _setting_button_start(self):
+        """Создаёт и размещает кнопку запуска случайного выбора пары."""
         self.button_start = QPushButton("Поехали!")
 
         font = QFont()
@@ -78,6 +85,7 @@ class MainWindow(QMainWindow):
         )
 
     def _create_grid_for_photos_and_indicators(self):
+        """Создаёт сетку для фотографий автомобилей, гаражей и индикаторов."""
         self._grid = QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setVerticalSpacing(4)
@@ -94,6 +102,7 @@ class MainWindow(QMainWindow):
         self.main_layout.addLayout(self._grid, 1)
 
     def _posting_photos_and_indicators(self):
+        """Загружает фотографии и размещает их вместе с индикаторами в сетке."""
         l_row = 0
         r_row = 0
         for file in Path("./photos").iterdir():
@@ -118,12 +127,28 @@ class MainWindow(QMainWindow):
             self._grid.setRowStretch(row, 1)
 
     def _is_photo_file(self, file: Path) -> bool:
+        """Проверяет, является ли путь поддерживаемым файлом изображения.
+
+        Args:
+            file: Путь к проверяемому файлу.
+
+        Returns:
+            True, если файл существует и имеет поддерживаемое расширение.
+        """
         if not file.is_file():
             return False
 
         return file.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
 
     def _create_indicator(self, color: str | None = None) -> QLabel:
+        """Создаёт индикатор заданного цвета.
+
+        Args:
+            color: Цвет фона индикатора. По умолчанию индикатор прозрачный.
+
+        Returns:
+            Созданный QLabel-индикатор.
+        """
         if color is None:
             color = "transparent"
 
@@ -134,6 +159,7 @@ class MainWindow(QMainWindow):
         return indicator
 
     def _add_indicator(self, row: int, column: int) -> None:
+        """Добавляет индикатор в указанную позицию сетки."""
         indicator = self._create_indicator()
         self._grid.addWidget(
             indicator,
@@ -149,6 +175,13 @@ class MainWindow(QMainWindow):
         column: int,
         color: str | None = None,
     ) -> None:
+        """Устанавливает цвет индикатора в указанной позиции.
+
+        Args:
+            row: Строка индикатора в сетке.
+            column: Столбец индикатора в сетке.
+            color: Цвет индикатора. По умолчанию прозрачный.
+        """
         if color is None:
             color = "transparent"
         indicator = self._indicators[row, column]
@@ -159,18 +192,21 @@ class MainWindow(QMainWindow):
         row: int,
         column: int,
     ) -> None:
+        """Устанавливает индикатору случайный цвет."""
         color = self.random_color()
 
         indicator = self._indicators[row, column]
         indicator.setStyleSheet(self._indicator_style_sheet(color))
 
     def _indicator_style_sheet(self, color: str) -> str:
+        """Возвращает stylesheet обычного индикатора заданного цвета."""
         return f"""
             background-color: {color};
             border-radius: 12px;
         """
 
     def _busy_indicator_style_sheet(self):
+        """Возвращает stylesheet индикатора объекта, включённого в пару."""
         # нумерация пар начинается с 1
         background, border = INDICATOR_COLORS[
             (self._pair_number - 1) % len(INDICATOR_COLORS)
@@ -188,28 +224,42 @@ class MainWindow(QMainWindow):
         """
 
     def _photo_widwet_style_sheet(self):
+        """Возвращает stylesheet для рамки фотографии."""
         return "border: 1px solid lightgray;"
 
     def _connects(self):
+        """Подключает сигналы элементов интерфейса к обработчикам."""
         self.button_start.clicked.connect(self.preparing_button_start)
 
     def _init_random_conformity(self):
+        """Инициализирует модель случайного выбора автомобилей и гаражей."""
         self.random_conformity = RandomConformity()
         self.random_conformity.init_objects(self.cars, Type.CAR)
         self.random_conformity.init_objects(self.garages, Type.GARAGE)
 
     def wait_ms(self, ms: int) -> None:
+        """Выполняет задержку, сохраняя обработку событий Qt.
+
+        Args:
+            ms: Длительность задержки в миллисекундах.
+        """
         loop = QEventLoop()
         QTimer.singleShot(ms, loop.quit)
         loop.exec()
 
     def preparing_button_start(self):
+        """Обрабатывает нажатие кнопки запуска и управляет её доступностью."""
         self.button_start.setEnabled(False)
 
         if self._create_random_car_garage_pair() and self.leftover_pairs > 0:
             self.button_start.setEnabled(True)
 
     def _create_random_car_garage_pair(self) -> bool:
+        """Создаёт и отображает случайную пару «автомобиль — гараж».
+
+        Returns:
+            True, если пара успешно создана, иначе False.
+        """
         self._pair_number += 1
 
         base_id = self.random_single_selection_with_animation()
@@ -244,18 +294,27 @@ class MainWindow(QMainWindow):
         column: int,
         object_id: Id,
     ) -> None:
+        """Помечает объект занятым и отображает его принадлежность к паре.
+
+        Args:
+            row: Строка индикатора в сетке.
+            column: Столбец индикатора в сетке.
+            object_id: Идентификатор автомобиля или гаража.
+        """
 
         self.random_conformity.set_object_is_occuped(object_id)
         self.set_appearance_of_busy_indicator(row=row, column=column)
         self.view_pair_number(row, column)
 
     def set_appearance_of_busy_indicator(self, row: int, column: int) -> None:
+        """Оформляет индикатор как занятый объект найденной пары."""
         indicator = self._indicators[row, column]
         indicator.setFixedSize(48, 48)
         indicator.setStyleSheet(self._busy_indicator_style_sheet())
         indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def view_pair_number(self, row: int, column: int) -> None:
+        """Отображает номер текущей пары на индикаторе."""
         item = self._grid.itemAtPosition(row, column)
         if item is None:
             return
@@ -263,11 +322,21 @@ class MainWindow(QMainWindow):
         item.widget().setText(f"{self._pair_number}")
 
     def get_indicator_column(self, id_type: Type) -> int:
+        """Возвращает столбец индикатора для автомобиля или гаража."""
         return 1 if id_type == Type.CAR else 3
 
     def random_single_selection_with_animation(
         self, filtr: Type | None = None
     ) -> Id | None:
+        """Выполняет случайный выбор объекта с визуальной анимацией.
+
+        Args:
+            filtr: Тип выбираемого объекта. Если None, выбирается объект любого типа.
+
+        Returns:
+            Идентификатор последнего выбранного свободного объекта или None,
+            если подходящих свободных объектов нет.
+        """
         random_time_sec = random.randint(
             SEC_START_RANDOM_TIME_INTERVAL,
             SEC_STOP_RANDOM_TIME_INTERVAL,
@@ -285,6 +354,14 @@ class MainWindow(QMainWindow):
         return result
 
     def _find_and_show_single_random_object(self, filtr: Type | None) -> Id | None:
+        """Выбирает один свободный объект и кратковременно подсвечивает его.
+
+        Args:
+            filtr: Тип выбираемого объекта или None для выбора любого типа.
+
+        Returns:
+            Идентификатор выбранного объекта или None, если выбор невозможен.
+        """
 
         selected_id = self.random_conformity.select_random_free_object(filtr=filtr)
         if selected_id is None:
@@ -310,10 +387,12 @@ class MainWindow(QMainWindow):
     def _add_and_style_widget_in_layuot(
         self, row: int, column: int, widget: QWidget
     ) -> None:
+        """Применяет стиль к виджету и добавляет его в сетку."""
         widget.setStyleSheet(self._photo_widwet_style_sheet())
         self._grid.addWidget(widget, row, column)
 
     def random_color(self) -> str:
+        """Возвращает случайный цвет в формате RGB для Qt stylesheet."""
         r = random.randint(0, 255)
         g = random.randint(0, 255)
         b = random.randint(0, 255)

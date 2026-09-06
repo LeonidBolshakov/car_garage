@@ -1,3 +1,5 @@
+"""Виджет для отображения фотографии с сохранением пропорций."""
+
 from pathlib import Path
 
 from PyQt6.QtGui import QPixmap, QResizeEvent
@@ -6,7 +8,14 @@ from PyQt6.QtCore import Qt
 
 
 class PhotoLabel(QLabel):
+    """QLabel, автоматически масштабирующий фотографию под размер виджета."""
+
     def __init__(self, file: Path) -> None:
+        """Загружает исходное изображение и настраивает виджет.
+
+        Args:
+            file: Путь к файлу изображения.
+        """
         super().__init__()
 
         self._original_pixmap = QPixmap(str(file))
@@ -18,6 +27,7 @@ class PhotoLabel(QLabel):
         )
 
     def resizeEvent(self, a0: QResizeEvent | None) -> None:
+        """Масштабирует изображение при изменении размера виджета, сохраняя пропорции."""
         super().resizeEvent(a0)
 
         if self._original_pixmap.isNull():

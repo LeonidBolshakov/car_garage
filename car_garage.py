@@ -1,3 +1,5 @@
+"""Точка входа приложения «Автомобиль <-> Гараж»."""
+
 from PyQt6.QtWidgets import QApplication
 import sys
 
@@ -9,6 +11,13 @@ def exception_hook(
     exc_value: BaseException,
     traceback,
 ) -> None:
+    """Обрабатывает необработанное исключение и завершает Qt-приложение.
+
+    Args:
+        exc_type: Тип исключения.
+        exc_value: Экземпляр исключения.
+        traceback: Объект traceback исключения.
+    """
     sys.__excepthook__(exc_type, exc_value, traceback)
 
     app_hook = QApplication.instance()
