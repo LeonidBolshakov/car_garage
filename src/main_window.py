@@ -30,6 +30,7 @@ INDICATOR_COLORS = (
 )
 
 INDICATOR_TEXT_COLOR = "white"
+PHOTOS_DIR = Path(__file__).resolve().parent.parent / "Photos"
 
 
 class MainWindow(QMainWindow):
@@ -105,7 +106,7 @@ class MainWindow(QMainWindow):
         """Загружает фотографии и размещает их вместе с индикаторами в сетке."""
         l_row = 0
         r_row = 0
-        for file in Path("./photos").iterdir():
+        for file in PHOTOS_DIR.iterdir():
             if not self._is_photo_file(file):
                 continue
 
